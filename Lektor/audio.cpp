@@ -41,11 +41,14 @@ void Lektor::finalize_audio(void)
 uint32_t last_micro_call;
 int Lektor::init_audio(void)
 {
+    int i;
     if (audioMode < LEKTOR_AUDIO_I2S || audioMode > LEKTOR_AUDIO_PWM7) {
         return LEKTOR_ERROR_ILLEGAL;
     }
     i2s_begin();
     i2s_set_rate((audioMode == LEKTOR_AUDIO_PWM7)?(4 * g_samrate):g_samrate);
+    last_micro_call = micros();
+    for (i = 0; i < 1000; i++) put_sample(0);
     return 0;
 }
 
