@@ -987,14 +987,14 @@ int Lektor::poststresser(unsigned char *pos)
 
 int Lektor::phtoelm(int mode)
 {
-    unsigned char stress, znak, elm;
+    unsigned char stress, znak;
+    uint16_t elm, *zpr, *zos, *edbg;
     int pos, melody, nsyl;
-    unsigned char *zpr, *zos, *c, *d, *plact;
-    unsigned char *edbg;
+    uint16_t *c, *d, *plact;
     zpr=NULL;
     zos=NULL;
     unsigned char lact=0; // ostatnia jest akcentowana
-    edbg=strbeg;
+    edbg=(uint16_t *)strbeg;
     nsyl = 0;
     while (*thistr) {
         znak = *thistr++;
@@ -1026,50 +1026,54 @@ int Lektor::phtoelm(int mode)
 #ifdef __linux__
             printf("ELM %s %d\n",phonames[elm], elm);
 #endif
-            if (!robotic) elm |= (stress << 6);
+            if (!robotic) elm |= stress << 8;
             if (stress) {
                 zpr = zos;
-                zos = strbeg;
+                zos = (uint16_t *)strbeg;
                 if (lact) {
-                    plact=strbeg;
+                    plact=(uint16_t *)strbeg;
                 }
             }
             stress = 0;
-            if (thistr <= strbeg) return LEKTOR_ERROR_STRING_OVERLAP;
-            *strbeg++ = elm;
+            if (thistr <= strbeg + 1) return LEKTOR_ERROR_STRING_OVERLAP;
+            *(uint16_t *)strbeg = elm;
+            strbeg += 2;
         }
     }
-    if (lact && (nsyl == 1 || mode != TTS_PHRASE_DOT)) {
-        if (thistr <= strbeg) return LEKTOR_ERROR_STRING_OVERLAP;
-        for (c = strbeg; c >= plact; c--) {
+//    if (lact && (nsyl == 1 || mode != TTS_PHRASE_DOT)) {
+    if (lact) {
+        *(uint16_t *)plact |= 0x400;
+        if (thistr <= strbeg + 1) return LEKTOR_ERROR_STRING_OVERLAP;
+        for (c = (uint16_t *)strbeg; c >= plact; c--) {
             c[1] = c[0];
         }
-        strbeg++;
+        strbeg += 2;
         lact = 0;
     }
-    melody = (zos)?(strbeg - zos):(strbeg - edbg);
+    melody = (uint16_t *)strbeg - (zos?zos:edbg);
     if (melody > 63) melody = 63;
-    if (thistr <= strbeg) return LEKTOR_ERROR_STRING_OVERLAP;
-    *strbeg = 0;
+    if (thistr <= strbeg+1) return LEKTOR_ERROR_STRING_OVERLAP;
+    *(uint16_t *)strbeg = 0;
+    
     /* korekta melodii */
 
     if (mode == TTS_PHRASE_QUESTION) {
 	    if (zos) {
-		    if (!lact) *zos= (*zos & 63) | 0x40; /* opadająca jeśli nie ostatnia */
-		    else if (zpr) *zpr= (*zpr & 63) | 0x40; /* opadająca przedostatnia akcentowana */
+		    if (!lact) *zos= (*zos & 0x4ff) | 0x100; /* opadająca jeśli nie ostatnia */
+		    else if (zpr) *zpr= (*zpr & 0x4ff) | 0x100; /* opadająca przedostatnia akcentowana */
 	    }
 
     }
     else if (mode == TTS_PHRASE_COMMA) {
-        if (zos) *zos= (*zos & 63) | 0x40;
+        if (zos) *zos= (*zos & 0x4ff) | 0x100;
     }
     else {
-        if (zos && lact) *zos= (*zos & 63) | 0x40;
+        if (zos && lact) *zos= (*zos & 0x4ff) | 0x100;
     }
     /* korekta akcentów */
 
     for (c = edbg; *c; c++) {
-        if ((*c & 0xc0) == 0xc0) {
+        if ((*c & 0x300) == 0x300) {
             c++;
             break;
         }
@@ -1077,12 +1081,12 @@ int Lektor::phtoelm(int mode)
     unsigned char actyp = 0;
     d = NULL;
     for (; *c; c++) {
-        if ((*c & 0xc0) == 0xc0) {
-            *c = (*c & 63) | (actyp ? 0x80 : 0x40);
+        if ((*c & 0x300) == 0x300) {
+            *c = (*c & 0x4ff) | (actyp ? 0x200 : 0x100);
             actyp ^= 1;
             d=c;
         }
     }
-    if (d) *d |= 0xc0;
+    if (d) *d |= 0x300;
     return (melody << 3) | mode;
 }

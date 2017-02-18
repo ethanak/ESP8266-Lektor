@@ -85,7 +85,7 @@ int Lektor::say_buffer(void)
         printf("Mode = %d, boundary = %d\n",
             rc & 7, rc >> 3);
 #endif
-        rc = holmes((unsigned char *)buffer, rc);
+        rc = holmes((uint16_t *)buffer, rc);
         if (rc) break;
     }
     finalize_audio();
@@ -96,6 +96,20 @@ int Lektor::say_buffer(void)
 }
 
 #ifndef __linux__
+
+size_t Lektor::wwrite(uint16_t znak)
+{
+    if (znak < 0x80) return write(znak);
+    if (znak < 0x800) {
+        if (!write((znak >> 6) | 0xc0)) return 0;
+        return write((znak & 0x3f) | 0x80)?2:0;
+    }
+    if (!write((znak >> 12) | 0xe0)) return 0;
+    if (!write(((znak >> 6) & 0x3f) | 0x80)) return 0;
+    return write((znak & 0x3f) | 0x80)?3:0;
+}
+
+
 size_t Lektor::write(uint8_t znak)
 {
     if (znak != '\n') {

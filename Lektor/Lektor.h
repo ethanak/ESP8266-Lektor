@@ -50,6 +50,7 @@ class Lektor
         void setMouthCallback(void (*callback)(int));
 #ifndef __linux__
         virtual size_t write(uint8_t);
+        size_t wwrite(uint16_t);
         void clean(void);
         int flush(void);
 #ifdef F
@@ -105,7 +106,7 @@ class Lektor
         int encode(unsigned char *pos);
         int pasuj(unsigned char *inp, int prod, int dir);
 
-        int holmes(unsigned char *elm, unsigned int mode);
+        int holmes(uint16_t *elm, unsigned int mode);
 
         int parwave(struct klatt_frame *pars);
         void parwave_init(void);

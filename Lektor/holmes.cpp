@@ -188,21 +188,22 @@ interpolate(slope_t * s, slope_t * e, Float mid, int t, int d)
 
 static inline int Stress(int a)
 {
-    a &= 0xc0;
+    a &= 0x300;
     if (!a) return 0;
-    if (a == 0x40) return -1;
-    else return a>>6;
+    if (a == 0x100) return -1;
+    else return a>>8;
 }
 
 static inline int Duration(int a)
 {
-    int du = elm_du(a & 63);
-    if (a & 0xc0) du += 4;
+    int du = elm_du(a & 255);
+    if (a & 0x400) du = (du * 2)/3;
+    else if (a & 0x300) du += 4;
     return du;
 }
 
 
-int Lektor::holmes(unsigned char *elm, unsigned int mode)
+int Lektor::holmes(uint16_t *elm, unsigned int mode)
 {
     filter_t flt[nEparm];
     struct klatt_frame pars;
@@ -244,22 +245,21 @@ int Lektor::holmes(unsigned char *elm, unsigned int mode)
         flt[j].a = 1.0;
         flt[j].b = 0.0;
     }
-    nelm = strlen((const char *)elm);
+    for (nelm = 0; elm[nelm]; nelm++);
     delta_beg = nelm - (mode >> 3) + 1;
     delta_end = nelm;
-    //delta_beg = nelm - 5;
-    delta_top=160.0;
+    delta_top=130.0;
     mode &= 7;
     if (mode==TTS_PHRASE_COMMA) delta_top=-50.0;else
     if (mode==TTS_PHRASE_QUESTION) delta_top=-160;else
+    if (mode==TTS_PHRASE_EXCLAM) delta_top=250;else
     if (mode==TTS_PHRASE_COMMA2) delta_top=50;
     if (delta_end-delta_beg>0) delta_top=delta_top/(float)(delta_end-delta_beg);
-
     for (i = 0; i< nelm; i++) {
-        int ce = elm[i] & 63;
+        int ce = elm[i] & 255;
         int dur = Duration(elm[i]);
         if (dur > 0) {
-            int ne = elm[i+1] & 63;
+            int ne = elm[i+1] & 255;
             slope_t start[nEparm];
             slope_t end[nEparm];
             unsigned t;
@@ -315,7 +315,7 @@ int Lektor::holmes(unsigned char *elm, unsigned int mode)
                     tstress = 0;
                     ntstress = dur;
                     while (j <= nelm) {
-                        int e   = elm[j] & 63;
+                        int e   = elm[j] & 255;
                         unsigned du = Duration(elm[j]);
                         int s  = (j < nelm) ? Stress(elm[j]) : 3;
                         int s1;
@@ -328,7 +328,7 @@ int Lektor::holmes(unsigned char *elm, unsigned int mode)
                                 stress_e.v = (float) 0.1;
                             do {
                                 d += du;
-                                e = elm[j] & 63;
+                                e = elm[j] & 255;
                                 du = Duration(elm[j]);
                                 s1 = Stress(elm[j++]);
                             } while (elm_wvl(e) && s1 == s);
