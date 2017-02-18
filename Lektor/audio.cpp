@@ -35,10 +35,13 @@ void Lektor::finalize_audio(void)
 }
 
 #else
+#include <Arduino.h>
+#include <i2s_reg.h>
 #include <i2s.h>
 
 
-uint32_t last_micro_call;
+static uint32_t last_micro_call;
+static bool ftime;
 int Lektor::init_audio(void)
 {
     int i;
@@ -48,11 +51,11 @@ int Lektor::init_audio(void)
     i2s_begin();
     i2s_set_rate((audioMode == LEKTOR_AUDIO_PWM7)?(4 * g_samrate):g_samrate);
     last_micro_call = micros();
-    for (i = 0; i < 1000; i++) put_sample(0);
+    ftime = true;
     return 0;
 }
 
-int Lektor::audio_callback(void)
+int ICACHE_FLASH_ATTR Lektor::audio_callback(void)
 {
     if (!idle_callback) {
         yield();
@@ -77,18 +80,31 @@ const uint32_t ICACHE_RODATA_ATTR fakePwm[]={0,
 static float gain = 2.9;
 
 
-static unsigned short swab(unsigned short w)
+unsigned short inline swab(unsigned short w)
 {
     return ((w >> 8) & 255) | ((w & 255) << 8);
 }
 
-int Lektor::put_sample(short int sample)
+int ICACHE_FLASH_ATTR Lektor::put_sample(short int sample)
 {
-    uint32_t samp;
+    int32_t samp;
     static int err = 0;
     static int last_bit = 0;
     int i, rc;
 
+    if (ftime) {
+        ftime = false;
+        if (audioMode == LEKTOR_AUDIO_PWM5) {
+            for (i=0; i<1000; i++) i2s_write_sample_nb(fakePwm[i>>6]);
+        }
+        else if (audioMode == LEKTOR_AUDIO_PWM7) {
+            for (i=0; i<4000; i++) i2s_write_sample_nb(0);
+            for (i=0; i<4000; i++) i2s_write_sample_nb(fakePwm[i>>8]);
+        }
+        else {
+            for (i = 0; i < 1000; i++) i2s_write_sample_nb(0);
+        }
+    }
     if (micros() - last_micro_call > idle_micros) {
         if ((rc = audio_callback())) return rc;
     }
@@ -117,7 +133,7 @@ int Lektor::put_sample(short int sample)
     }
     else {
         err = samp & 0x1ff;
-        samp = samp >> 7;
+        samp = samp >> 9;
         for (i = 3; i >= 0; i--) {
             i2s_write_sample_nb(fakePwm[(samp + i) >> 2]);
         }
@@ -127,7 +143,18 @@ int Lektor::put_sample(short int sample)
 
 void Lektor::finalize_audio(void)
 {
-    while (!i2s_is_empty()) delay(1);
+    int i;
+    if (audioMode == LEKTOR_AUDIO_PWM5) {
+        for (i=1000; i>=0; i--) i2s_write_sample_nb(fakePwm[i>>6]);
+        for (i=0; i<1000; i++) i2s_write_sample_nb(0);
+
+    }
+    else if (audioMode == LEKTOR_AUDIO_PWM7) {
+        for (i=4000; i>=0; i--) i2s_write_sample_nb(fakePwm[i>>8]);
+        for (i=0; i<4000; i++) i2s_write_sample_nb(0);
+    }
+    //while (!i2s_is_empty()) delay(1);
+    delay(10);
     i2s_end();
 }
 
