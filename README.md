@@ -1,9 +1,10 @@
 # ESP8266-Lektor
 Polish speech synthesizer for ESP8266 - Syntezator mowy języka polskiego dla ESP8266
 ### UWAGA!
-Syntezator wymaga taktowania procesora 160 MHz! Przy kompilacji programów
-używających biblioteki należy bezwzgldnie przełączyć taktowanie na 160 MHz,
-w przeciwnym razie głos będzie zniekształcony i praktycznie nieczytelny.
+Syntezator pracujący w trybie PWM7 wymaga taktowania procesora 160 MHz!
+Przy kompilacji programów używających biblioteki należy bezwzgldnie
+przełączyć taktowanie na 160 MHz, w przeciwnym razie głos będzie
+zniekształcony i praktycznie nieczytelny.
 
 Biblioteki Arduino dla ESP8266 w wersji na dziś zawierają krytyczny błąd.
 Aby go poprawić, należy zlokalizować plik core_esp8266_i2s.c
