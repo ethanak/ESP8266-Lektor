@@ -6,6 +6,16 @@
 #include "Lektor.h"
 
 Lektor lektor;
+
+
+void mcb(int a)
+{
+    if (!a) printf("========\n");
+    else printf("E = %d, C = %c, P = %c\n",
+        LEKTOR_MTH_OPEN(a), 
+        LEKTOR_MTH_VOICED(a) ? '*' : ' ',
+        ".aieoulwmfx-"[LEKTOR_MTH_SHAPE(a)]);
+}
 main(int argc, char *argv[])
 {
     int opt, i, len;
@@ -31,6 +41,7 @@ main(int argc, char *argv[])
         }
 
     }
+    lektor.setMouthCallback(mcb);
     len=0;
     for (i=optind; i< argc; i++) {
         len += strlen(argv[i])+1;

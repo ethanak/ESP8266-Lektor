@@ -280,6 +280,7 @@ int Lektor::holmes(uint16_t *elm, unsigned int mode)
                         }
                     }
                 }
+                m |= LEKTOR_MTH_SPEAKING_BIT | pgm_read_byte(&E_shape[ce]);
                 if (last_mouth != m) {
                     mouth_callback((last_mouth = m));
                 }
