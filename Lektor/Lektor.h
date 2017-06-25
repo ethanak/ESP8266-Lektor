@@ -44,7 +44,7 @@ enum {
 #define LEKTOR_MTH_SPEAKING(a) ((a) & LEKTOR_MTH_SPEAKING)
 #define LEKTOR_MTH_SHAPE(a) (((a) >> 3) & 15)
 #define LEKTOR_MTH_OPEN(a) ((a) & 3)
-#define LEKTOR_MTH_VOL(a) (LEKTOR_MTH_VOICED(a) ? max((LEKTOR_MTH_OPEN(a), 1)) : 0)
+#define LEKTOR_MTH_VOL(a) (LEKTOR_MTH_VOICED(a) ? (LEKTOR_MTH_OPEN(a) ? LEKTOR_MTH_OPEN(a) : 1) : 0)
 
 typedef struct {
   float a;
