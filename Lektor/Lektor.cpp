@@ -135,10 +135,10 @@ void Lektor::clean(void)
     last_error = 0;
 }
 
-int Lektor::flush(void)
+void Lektor::flush(void)
 {
     buffer[charcount] = 0;
-    return say_buffer();
+    say_buffer();
 }
 
 int Lektor::printf(const char *format, ...)
