@@ -75,7 +75,7 @@ class Lektor
         virtual size_t write(uint8_t);
         size_t wwrite(uint16_t);
         void clean(void);
-        int flush(void);
+        void flush(void);
 #ifdef F
         int printf(const __FlashStringHelper *format, ...);
 #endif
